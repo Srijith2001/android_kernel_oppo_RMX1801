@@ -400,6 +400,8 @@ void get_node_info(struct f2fs_sb_info *sbi, nid_t nid, struct node_info *ni)
 
 	memset(&ne, 0, sizeof(struct f2fs_nat_entry));
 
+	down_write(&nm_i->nat_tree_lock);
+
 	/* Check current segment summary */
 	down_read(&curseg->journal_rwsem);
 	i = lookup_journal_in_cursum(journal, NAT_JOURNAL, nid, 0);
@@ -425,8 +427,8 @@ void get_node_info(struct f2fs_sb_info *sbi, nid_t nid, struct node_info *ni)
 cache:
 	/* cache nat entry */
 	down_write(&nm_i->nat_tree_lock);
-	cache_nat_entry(sbi, nid, &ne);
-	up_write(&nm_i->nat_tree_lock);
+        cache_nat_entry(NM_I(sbi), nid, &ne);
+        up_write(&nm_i->nat_tree_lock);
 }
 
 /*
@@ -2036,7 +2038,7 @@ static void __build_free_nids(struct f2fs_sb_info *sbi, bool sync, bool mount)
 		else
 			remove_free_nid(sbi, nid);
 	}
-	up_read(&curseg->journal_rwsem);
+	mutex_unlock(&curseg->curseg_mutex);
 	up_read(&nm_i->nat_tree_lock);
 
 	ra_meta_pages(sbi, NAT_BLOCK_OFFSET(nm_i->next_scan_nid),
@@ -2473,8 +2475,8 @@ static void __flush_nat_entry_set(struct f2fs_sb_info *sbi,
 		}
 		raw_nat_from_node_info(raw_ne, &ne->ni);
 		nat_reset_flag(ne);
-		__clear_nat_cache_dirty(NM_I(sbi), set, ne);
-		if (nat_get_blkaddr(ne) == NULL_ADDR) {
+		__clear_nat_cache_dirty(NM_I(sbi), ne);
+		if (nat_get_blkaddr(ne) == NULL_ADDR)
 			add_free_nid(sbi, nid, false);
 			spin_lock(&NM_I(sbi)->nid_list_lock);
 			NM_I(sbi)->available_nids++;
