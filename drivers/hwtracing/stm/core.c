@@ -880,10 +880,8 @@ static int __stm_source_link_drop(struct stm_source_device *src,
 	 * we weren't holding the src::link_lock back then; if this is the
 	 * case, tell the caller to retry.
 	 */
-	if (link != stm) {
-		ret = -EAGAIN;
+	if (WARN_ON_ONCE(link != stm))
 		goto unlock;
-	}
 
 	stm_output_free(link, &src->output);
 	list_del_init(&src->link_entry);
