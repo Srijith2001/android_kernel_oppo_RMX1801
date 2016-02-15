@@ -407,7 +407,7 @@ static int stm_char_release(struct inode *inode, struct file *file)
 	 * matches the stm_char_open()'s
 	 * class_find_device() + try_module_get()
 	 */
-	stm_put_device(stm);
+	stm_put_device(stmf->stm);
 	kfree(stmf);
 
 	return 0;
@@ -710,8 +710,6 @@ int stm_register_device(struct device *parent, struct stm_data *stm_data,
 	return 0;
 
 err_device:
-	unregister_chrdev(stm->major, stm_data->name);
-
 	/* matches device_initialize() above */
 	put_device(&stm->dev);
 err_free:
