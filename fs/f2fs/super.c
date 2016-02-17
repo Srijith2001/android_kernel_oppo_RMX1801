@@ -2606,9 +2606,9 @@ free_nm:
 	destroy_node_manager(sbi);
 free_sm:
 	destroy_segment_manager(sbi);
+        kfree(sbi->ckpt);
 free_devices:
 	destroy_device_list(sbi);
-	kfree(sbi->ckpt);
 free_meta_inode:
 	make_bad_inode(sbi->meta_inode);
 	iput(sbi->meta_inode);
