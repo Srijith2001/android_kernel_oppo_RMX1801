@@ -627,7 +627,6 @@ void f2fs_update_dentry(nid_t ino, umode_t mode, struct f2fs_dentry_ptr *d,
 }
 
 int f2fs_add_regular_entry(struct inode *dir, const struct qstr *new_name,
-				const struct qstr *orig_name,
 				struct inode *inode, nid_t ino, umode_t mode)
 {
 	unsigned int bit_pos;
@@ -695,15 +694,14 @@ add_dentry:
 
 	if (inode) {
 		down_write(&F2FS_I(inode)->i_sem);
-		page = init_inode_metadata(inode, dir, new_name,
-						orig_name, NULL);
+		page = init_inode_metadata(inode, dir, new_name, NULL);
 		if (IS_ERR(page)) {
 			err = PTR_ERR(page);
 			goto fail;
 		}
 	}
 
-	make_dentry_ptr_block(NULL, &d, dentry_blk);
+	make_dentry_ptr(NULL, &d, (void *)dentry_blk, 1);
 	f2fs_update_dentry(ino, mode, &d, new_name, dentry_hash, bit_pos);
 
 	set_page_dirty(dentry_page);
