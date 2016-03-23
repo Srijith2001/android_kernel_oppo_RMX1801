@@ -624,13 +624,13 @@ int recover_fsync_data(struct f2fs_sb_info *sbi, bool check_only)
 	mutex_lock(&sbi->cp_mutex);
 
 	/* step #1: find fsynced inode numbers */
-	err = find_fsync_dnodes(sbi, &inode_list, check_only);
+	err = find_fsync_dnodes(sbi, &inode_list);
 	if (err || list_empty(&inode_list))
-		goto skip;
+		goto out;
 
 	if (check_only) {
 		ret = 1;
-		goto skip;
+		goto out;
 	}
 
 	need_writecp = true;
@@ -639,7 +639,7 @@ int recover_fsync_data(struct f2fs_sb_info *sbi, bool check_only)
 	err = recover_data(sbi, &inode_list);
 	if (!err)
 		f2fs_bug_on(sbi, !list_empty(&inode_list));
-skip:
+out:
 	destroy_fsync_dnodes(&inode_list);
 
 	/* truncate meta pages to be used by the recovery */
@@ -663,14 +663,5 @@ skip:
 		};
 		err = write_checkpoint(sbi, &cpc);
 	}
-
-	kmem_cache_destroy(fsync_entry_slab);
-out:
-#ifdef CONFIG_QUOTA
-	/* Turn quotas off */
-	f2fs_quota_off_umount(sbi->sb);
-#endif
-	sbi->sb->s_flags = s_flags; /* Restore MS_RDONLY status */
-
 	return ret ? ret: err;
 }

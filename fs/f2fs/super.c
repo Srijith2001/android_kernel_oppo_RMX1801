@@ -2530,9 +2530,12 @@ try_onemore:
 		if (need_fsck)
 			set_sbi_flag(sbi, SBI_NEED_FSCK);
 
+<<<<<<< HEAD
 		if (!retry)
 			goto skip_recovery;
 
+=======
+>>>>>>> 1499d39... f2fs: give -EINVAL for norecovery and rw mount
 		err = recover_fsync_data(sbi, false);
 		if (err < 0) {
 			need_fsck = true;
@@ -2549,8 +2552,21 @@ try_onemore:
 				"Need to recover fsync data");
 			goto free_sysfs;
 		}
+	} else {
+		err = recover_fsync_data(sbi, true);
+
+		if (!f2fs_readonly(sb) && err > 0) {
+			err = -EINVAL;
+			f2fs_msg(sb, KERN_ERR,
+				"Need to recover fsync data");
+			goto free_kobj;
+		}
 	}
+<<<<<<< HEAD
 skip_recovery:
+=======
+
+>>>>>>> 1499d39... f2fs: give -EINVAL for norecovery and rw mount
 	/* recover_fsync_data() cleared this already */
 	clear_sbi_flag(sbi, SBI_POR_DOING);
 
