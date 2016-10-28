@@ -9299,7 +9299,7 @@ ufshcd_exit_latency_hist(struct ufs_hba *hba)
  *		data structure memory
  * @hba - per adapter instance
  */
-void ufshcd_remove(struct ufs_hba *hba)
+3void ufshcd_remove(struct ufs_hba *hba)
 {
 	scsi_remove_host(hba->host);
 	/* disable interrupts */
