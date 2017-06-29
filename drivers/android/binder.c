@@ -3259,8 +3259,16 @@ static void binder_transaction(struct binder_proc *proc,
 		}
 	}
 	tcomplete->type = BINDER_WORK_TRANSACTION_COMPLETE;
+	list_add_tail(&tcomplete->entry, &thread->todo);
 	binder_enqueue_work(proc, tcomplete, &thread->todo);
 	t->work.type = BINDER_WORK_TRANSACTION;	
+	list_add_tail(&t->work.entry, target_list);
+	if (target_wait) {
+		if (reply || !(t->flags & TF_ONE_WAY))
+			wake_up_interruptible_sync(target_wait);
+		else
+			wake_up_interruptible(target_wait);
+	}
 	if (reply) {
 		binder_inner_proc_lock(target_proc);
 		if (target_thread->is_dead) {
