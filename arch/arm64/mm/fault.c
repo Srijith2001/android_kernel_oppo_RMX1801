@@ -370,7 +370,7 @@ retry:
 	 * signal first. We do not need to release the mmap_sem because it
 	 * would already be released in __lock_page_or_retry in mm/filemap.c.
 	 */
-	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current)){
+	if ((fault & VM_FAULT_RETRY) && fatal_signal_pending(current)) {
 		if (!user_mode(regs))
 			goto no_context;
 		return 0;
