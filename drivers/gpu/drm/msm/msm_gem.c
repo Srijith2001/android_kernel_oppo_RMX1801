@@ -242,6 +242,7 @@ static struct page **get_pages(struct drm_gem_object *obj)
 		if (IS_ERR(msm_obj->sgt)) {
 			void *ptr = ERR_CAST(msm_obj->sgt);
 
+			dev_err(dev->dev, "failed to allocate sgt\n");
 			msm_obj->sgt = NULL;
 			return ptr;
 		}
@@ -289,6 +290,7 @@ static void put_pages(struct drm_gem_object *obj)
 	struct msm_gem_object *msm_obj = to_msm_bo(obj);
 
 	if (msm_obj->pages) {
+<<<<<<< HEAD
 		if (msm_obj->flags & MSM_BO_LOCKED) {
 			unprotect_pages(msm_obj);
 			msm_obj->flags &= ~MSM_BO_LOCKED;
@@ -296,6 +298,18 @@ static void put_pages(struct drm_gem_object *obj)
 
 		if (msm_obj->sgt)
 			sg_free_table(msm_obj->sgt);
+=======
+		/* For non-cached buffers, ensure the new pages are clean
+		 * because display controller, GPU, etc. are not coherent:
+		 */
+		if (msm_obj->flags & (MSM_BO_WC|MSM_BO_UNCACHED))
+			dma_unmap_sg(obj->dev->dev, msm_obj->sgt->sgl,
+					msm_obj->sgt->nents, DMA_BIDIRECTIONAL);
+
+		if (msm_obj->sgt)
+			sg_free_table(msm_obj->sgt);
+
+>>>>>>> c1b1c1a... drm/msm: fix leak in failed get_pages
 		kfree(msm_obj->sgt);
 
 		if (use_pages(obj)) {
