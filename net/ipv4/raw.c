@@ -497,6 +497,7 @@ static int raw_sendmsg(struct sock *sk, struct msghdr *msg, size_t len)
 	__be32 daddr;
 	__be32 saddr;
 	u8  tos;
+
 	int err;
 	struct ip_options_data opt_copy;
 	struct raw_frag_vec rfv;
