@@ -166,10 +166,10 @@ static inline bool wq_has_sleeper(wait_queue_head_t *wq)
 	return waitqueue_active(wq);
 }
 
-static inline void inode_nohighmem(struct inode *inode)
+/*static inline void inode_nohighmem(struct inode *inode)
 {
 	mapping_set_gfp_mask(inode->i_mapping, GFP_USER);
-}
+}*/
 
 /**
  * current_time - Return FS time
@@ -229,7 +229,7 @@ struct cp_control {
 };
 
 /*
- * For CP/NAT/SIT/SSA readahead
+ * indicate meta/data type
  */
 enum {
 	META_CP,
@@ -237,6 +237,8 @@ enum {
 	META_SIT,
 	META_SSA,
 	META_POR,
+	DATA_GENERIC,
+	META_GENERIC,
 };
 
 /* for the list of ino */
@@ -1733,6 +1735,7 @@ static inline block_t __start_cp_next_addr(struct f2fs_sb_info *sbi)
 {
 	block_t start_addr = le32_to_cpu(F2FS_RAW_SUPER(sbi)->cp_blkaddr);
 
+
 	if (sbi->cur_cp_pack == 1)
 		start_addr += sbi->blocks_per_seg;
 	return start_addr;
@@ -2441,6 +2444,39 @@ static inline void f2fs_update_iostat(struct f2fs_sb_info *sbi,
 	spin_unlock(&sbi->iostat_lock);
 }
 
+#define __is_meta_io(fio) (PAGE_TYPE_OF_BIO(fio->type) == META &&	\
+				(!is_read_io(fio->rw) || fio->is_meta))
+
+bool f2fs_is_valid_blkaddr(struct f2fs_sb_info *sbi,
+					block_t blkaddr, int type);
+void f2fs_msg(struct super_block *sb, const char *level, const char *fmt, ...);
+static inline void verify_blkaddr(struct f2fs_sb_info *sbi,
+					block_t blkaddr, int type)
+{
+	if (!f2fs_is_valid_blkaddr(sbi, blkaddr, type)) {
+		f2fs_msg(sbi->sb, KERN_ERR,
+			"invalid blkaddr: %u, type: %d, run fsck to fix.",
+			blkaddr, type);
+		f2fs_bug_on(sbi, 1);
+	}
+}
+
+static inline bool __is_valid_data_blkaddr(block_t blkaddr)
+{
+	if (blkaddr == NEW_ADDR || blkaddr == NULL_ADDR)
+		return false;
+	return true;
+}
+
+static inline bool is_valid_data_blkaddr(struct f2fs_sb_info *sbi,
+						block_t blkaddr)
+{
+	if (!__is_valid_data_blkaddr(blkaddr))
+		return false;
+	verify_blkaddr(sbi, blkaddr, DATA_GENERIC);
+	return true;
+}
+
 /*
  * file.c
  */
@@ -2523,8 +2559,9 @@ void f2fs_set_link(struct inode *dir, struct f2fs_dir_entry *de,
 void f2fs_update_dentry(nid_t ino, umode_t mode, struct f2fs_dentry_ptr *d,
 			const struct qstr *name, f2fs_hash_t name_hash,
 			unsigned int bit_pos);
-int f2fs_add_regular_entry(struct inode *, const struct qstr *,
-						struct inode *, nid_t, umode_t);
+int f2fs_add_regular_entry(struct inode *dir, const struct qstr *new_name,
+			const struct qstr *orig_name,
+			struct inode *inode, nid_t ino, umode_t mode);
 int __f2fs_do_add_link(struct inode *dir, struct fscrypt_name *fname,
 			struct inode *inode, nid_t ino, umode_t mode);
 int __f2fs_add_link(struct inode *dir, const struct qstr *name,
@@ -2747,8 +2784,8 @@ void build_gc_manager(struct f2fs_sb_info *sbi);
 /*
  * recovery.c
  */
-int recover_fsync_data(struct f2fs_sb_info *, bool);
-bool space_for_roll_forward(struct f2fs_sb_info *);
+int recover_fsync_data(struct f2fs_sb_info *sbi, bool check_only);
+bool space_for_roll_forward(struct f2fs_sb_info *sbi);
 
 /*
  * debug.c
